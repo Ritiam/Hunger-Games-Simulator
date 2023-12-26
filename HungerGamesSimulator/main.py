@@ -29,6 +29,8 @@ class Player():
     health = 100
     damage = 10
 
+
+
     peopleLiked = []
     peopleDisliked = []
 
@@ -64,17 +66,31 @@ class Player():
 
 # Lists
 
-weapons = ["bow and arrow", "knives", "maces", "tridents", "axe", "sword", "sickle"]
+weapons = ["bow and arrow", "knives", "trident", "axe", "sword"]
 
-cornucopiaItems = ["bow and arrow", "knives", "maces", "tridents", "axe", "sword", "sickle", "meal pack", "camouflage",
-                   "rope", "lipstick"]
+cornucopiaItems = ["bow and arrow", "knives", "trident", "axe", "sword",
+                   "meal pack", "camouflage", "rope", "lipstick", "shovel", "bandages"]
 
-cornucopiaPlayers = []
+allitems = ["bow and arrow", "knives", "maces", "tridents", "axe", "sword", "sickle", "meal pack", "camouflage",
+                   "rope", "lipstick", "stones" ]
 
-players = []
+cornucopiaPlayers = [] # List containing players at cornucopia
+
+players = [] # List containing players
+
+special = {} # Dictionary containing players with special attributes
 
 
 # Functions
+
+def find_someone(player):
+    while 1:
+        other_party = rand.choice(players)
+        if other_party.name != player.name and other_party.alive:
+            if other_party in special and special[other_party.name] != "Hidden":
+                return other_party
+            return other_party
+
 
 def foodEvent(player):  # When hunger is low
     eventList = {
@@ -87,49 +103,92 @@ def foodEvent(player):  # When hunger is low
     exec(eventList[event])
     if event == 0:
         player.health -= 20
-        player.hunger += 20
+        player.hunger += 40
         if player.check_death():
             player.deathDay = day
             print("They bled to death")
         print()
 
     elif event == 1:
-        player.hunger += 20
+        player.hunger += 40
         print()
 
     elif event == 2:
-        x = rand.choice([1, 2])
+        x = rand.randint(1, 2)
         if x == 1:
-            print(f"{player.name} gets poisoned")
+            print(f"They get poisoned")
             print()
             player.health -= 20
-            player.hunger += 20
+            player.hunger += 40
             if player.check_death():
                 player.deathDay = day
-                print("They die a painfull and slow death")
+                print(f"{player.name} die a painfull and slow death")
                 print()
 
         if x == 2:
-            player.hunger += 20
-            print(f"{player.name} likes the berries")
+            player.hunger += 40
+            print(f"{player.name} enjoys some edible berries")
             print()
 
     elif event == 3:
-        player.hunger += 20
+        player.hunger += 40
         print()
 
 
-def travelEvent(
-        player):  # Change this to random events
+def randomEvent(player):  # Change this to random events
     eventList = {
-        0: 'print(f"{player.name} scouts the area")',
-        1: 'print(f"{player.name} goes to inspect the Cornucopia")',
+        0: 'print(f"{player.name} stepped on a mine and blew up\n")',
+        1: 'print(f"{player.name} fell from a tree",end="")',
         2: 'print(f"{player.name} finds a hiding spot")',
-        3: 'print(f"{player.name} runs from a sound they heard")'
+        3: 'print(f"{player.name} hums a song\n")',
+        4: 'print(f"{player.name} sees smoke above trees")',
+        5: 'print(f"{player.name} finds some sharp stone")',
+        6: 'print(f"{player.name} poses for cameras to get donations\n")'
+
     }
     event = rand.choice(list(eventList.keys()))
     exec(eventList[event])
-    print()
+
+
+    if event == 0:
+        player.alive = False
+
+    elif event == 1:
+        z = rand.randint(1,3)
+        if z == 1:
+            other_party = find_someone(player)
+            print(f"\nThey landed on {other_party.name} and killed both of them\n")
+            other_party.alive = False
+            player.alive = False
+            other_party.deathDay = day
+            player.deathDay = day
+
+        elif z == 2:
+            other_party = find_someone(player)
+            print(f"\nThey landed on {other_party.name}, softening their fall and killing {other_party.name}\n")
+            other_party.alive = False
+            other_party.deathDay = day
+
+        elif z == 3:
+            player.health -= 20
+            if player.check_death():
+                print(" and couldn't get up, ever again\n")
+            else:
+                print(" and walked away with just some bruises\n")
+
+    elif event == 2:
+        special[player.name] = "Hidden"
+
+    elif event == 4:
+        v = rand.randint(1,2)
+        if v == 1:
+            print(f"They decided to not interfere and stayed low\n")
+        elif v == 2:
+            print(f"They went to check out the area")
+            encounterEvent(player)
+
+    elif event == 5:
+        player.items.append("Stones")
 
 
 
@@ -164,14 +223,12 @@ def donationEvent(player):
 
 
 def encounterEvent(player):  # Events that 2 people encounter each other
-    while 1:
-        other_party = rand.choice(players)
-        if other_party.name != player.name and other_party.alive:
-            break
+    other_party = find_someone(player)
+    print(f"{player.name} encountered {other_party.name}")
 
     # Add positive outcomes if they like each other
     if other_party.name not in player.peopleLiked:
-        print(f"{player.name} gets in a battle with {other_party.name}")
+        print(f"They get in a battle with {other_party.name}")
         battleEvent(player, other_party)
         print()
 
@@ -180,8 +237,7 @@ def otherEvent(player):
     eventList = {
         0: 'print(f"{player.name} gazes at the sky")',
         1: 'print(f"{player.name} hums a song")',
-        2: 'print(f"{player.name} thinks about their family")',
-        3: 'print(f"{player.name} sees a fire smoke")'
+        2: 'print(f"{player.name} thinks about their family")'
     }
     event = rand.choice(list(eventList.keys()))
     exec(eventList[event])
@@ -203,7 +259,7 @@ def battle(strong, weak):
         e = rand.randint(1, 3)
         if e <= 2 or weak.alive == False:  # The strong one kills the weak and takes an item
             if weak.items == []:
-                print(f"{strong.name} overpowerd and killed {weak.name}")
+                print(f"{strong.name} overpowered and killed {weak.name}")
                 weak.alive = False
                 weak.deathDay = day
             else:
@@ -219,7 +275,7 @@ def battle(strong, weak):
         elif e == 3:  # The strong one damages the weak and takes an item
             if weak.items == []:
                 print(strong.name, rand.choice(
-                    ["took a finger out of " + weak.name + " but couldn't finish them off",
+                    ["took a finger from " + weak.name + " but couldn't finish them off",
                      "left a scar on " + weak.name + "'s face but they ran away",
                      "hesitated to kill " + weak.name + " and they escaped"]))
             else:
@@ -237,16 +293,39 @@ def battle(strong, weak):
 
 
 def battleEvent(player, other_party):
+
+    def throw_stones(without,with_s): # defining a function to not be repetitive
+        without.health -= 20
+        if without.check_death():
+            print(f"{with_s.name} thrown some stones at {without.name}, dropping them dead")
+            with_s.items.remove("Stones")
+        else:
+            print(f"{with_s.name} thrown some stones at {without.name} and escaped")
+            with_s.items.remove("Stones")
+
+
     if player.damage > other_party.damage:
-        battle(player, other_party)
+        if "Stones" in other_party.items:
+            throw_stones(player,other_party)
+        else:
+            battle(player, other_party)
     elif player.damage < other_party.damage:
-        battle(other_party, player)
+        if "Stones" in player.items:
+            throw_stones(other_party,player)
+        else:
+            battle(other_party, player)
     else:
         x = rand.randint(1, 2)
         if x == 1:
-            battle(player, other_party)
+            if "Stones" in other_party.items:
+                throw_stones(player, other_party)
+            else:
+                battle(player, other_party)
         elif x == 2:
-            battle(other_party, player)
+            if "Stones" in player.items:
+                throw_stones(other_party, player)
+            else:
+                battle(other_party, player)
 
 
 # Özel günler
@@ -275,10 +354,7 @@ def cornucopiaEvent(player):
 
 
         elif i == 2 or i == 3:  # Encountered someone
-            while 1:
-                other_party = rand.choice(cornucopiaPlayers)
-                if other_party.name != player.name and other_party.alive:
-                    break
+            other_party = find_someone(player)
             print(f"They encountered {other_party.name}")
 
         if i == 2:  # VIOLENCE!
@@ -286,7 +362,7 @@ def cornucopiaEvent(player):
             print()
 
         elif i == 3:  # Placeholder for now
-            print("They nod to each other and continue their ways")
+            print("They nodded to each other and continue their ways")
             print()
 
 
@@ -301,7 +377,7 @@ def eventChooser(player):
             elif category == 2:
                 encounterEvent(player)
             elif category == 3:
-                travelEvent(player)
+                randomEvent(player)
             elif category == 4:
                 donationEvent(player)
             elif category == 5:
@@ -323,6 +399,7 @@ for a in playerList.split(" "):
     a = Player(colors[i] + a + '\33[0m')
     players.append(a)
     i += 1
+
 
 round = 3
 
@@ -384,5 +461,7 @@ while len(players) > 1:
                 print(i.name, end=" ")
         print("are alive", end="")
     print("\n\n")
+
+    special = {}
 
     round += 1
